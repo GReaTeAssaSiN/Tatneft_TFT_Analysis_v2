@@ -1,0 +1,347 @@
+{
+  "display_names": {
+    "time_idx": "День",
+    "station_id": "Идентификатор АЗС",
+    "station_name": "Название АЗС",
+    "road_type": "Тип дороги",
+    "road_level": "Уровень дороги",
+    "direction": "Направление",
+    "settlement_size": "Размер н.п.",
+    "distance_to_city_km": "Удалённость от города (км)",
+    "num_pumps_AI92": "Кол-во ТРК АИ-92",
+    "num_pumps_AI92_bio": "Кол-во ТРК АИ-92 Taneco-bio",
+    "num_pumps_AI95": "Кол-во ТРК АИ-95",
+    "num_pumps_AI95_bio": "Кол-во ТРК АИ-95 Taneco-bio",
+    "num_pumps_AI100_bio": "Кол-во ТРК АИ-100 Taneco-bio",
+    "num_pumps_DT": "Кол-во ТРК ДТ",
+    "num_pumps_DT_bio": "Кол-во ТРК ДТ Taneco-bio",
+    "num_pumps_SUG": "Кол-во ТРК  СУГ",
+    "num_pumps_KPG": "Кол-во ТРК КПГ",
+    "num_pumps_SPG": "Кол-во ТРК СПГ",
+    "total_pumps": "Общее количество ТРК",
+    "has_shop": "Магазин",
+    "shop_area_m2": "Площадь магазина (м²)",
+    "has_car_wash": "Автомойка",
+    "has_tire_service": "Шиномонтаж",
+    "has_cafe": "Кафе",
+    "has_hotel": "Гостиница",
+    "has_shop_молельная_комната": "Молельная комната",
+    "has_shop_прачечная": "Прачечная",
+    "has_shop_электрозарядная_станция": "Электрозарядная станция",
+    "has_shop_подкачка_шин": "Подкачка шин",
+    "competitors_wink": "Конкуренты ВИНК (кол-во)",
+    "competitors_конкурент1": "Конкурент 1",
+    "competitors_конкурент2": "Конкурент 2",
+    "competitors_конкурент3": "Конкурент 3",
+    "competitors_конкурент4": "Конкурент 4",
+    "competitors_private": "Частные конкуренты (кол-во)",
+    "date": "Дата",
+    "day_of_week": "День недели",
+    "week_of_year": "Неделя года",
+    "month": "Месяц",
+    "quarter": "Квартал",
+    "season": "Сезон",
+    "is_weekend": "Выходной день",
+    "is_holiday": "Праздничный день",
+    "holiday_name": "Название праздника",
+    "temperature": "Температура (°C)",
+    "weather_condition": "Тип погоды",
+    "precipitation_mm": "Осадки (мм)",
+    "price_AI92": "Цена АИ-92 (руб./л)",
+    "price_AI92_bio": "Цена АИ-92 Taneco-bio (руб./л)",
+    "price_AI95": "Цена АИ-95 (руб./л)",
+    "price_AI95_bio": "Цена АИ-95 Taneco-bio (руб./л)",
+    "price_AI100_bio": "Цена АИ-100 Taneco-bio (руб./л)",
+    "price_DT": "Цена ДТ (руб./л)",
+    "price_DT_bio": "Цена ДТ Taneco-bio (руб./л)",
+    "price_SUG": "Цена СУГ (руб./л)",
+    "price_KPG": "Цена КПГ (руб./л)",
+    "price_SPG": "Цена СПГ (руб./л)",
+    "competitor_price_AI92": "Цена конкурента на АИ-92 (руб./л.)",
+    "competitor_price_AI92_brend": "Цена конкурента на АИ-92 Бренд (руб./л)",
+    "competitor_price_AI95": "Цена конкурента на АИ-95 (руб./л)",
+    "competitor_price_AI95_brend": "Цена конкурента на АИ-95 Бренд (руб./л)",
+    "competitor_price_AI100": "Цена конкурента на АИ-100 (руб./л)",
+    "competitor_price_DT": "Цена конкурента на ДТ (руб./л)",
+    "competitor_price_DT_Brend": "Цена конкурента на ДТ Бренд (руб./л)",
+    "competitor_price_SUG": "Цена конкурента на СУГ (руб./л)",
+    "competitor_price_KPG": "Цена конкурента на КПГ (руб./л)",
+    "competitor_price_SPG": "Цена конкурента на СПГ (руб./л)",
+    "sales_AI92": "Продажи АИ-92 (л/сут)",
+    "sales_AI92_bio": "Продажи АИ-92 Taneco-bio (л/сут)",
+    "sales_AI95": "Продажи АИ-95 (л/сут)",
+    "sales_AI95_bio": "Продажи АИ-95 Taneco-bio (л/сут)",
+    "sales_AI100_bio": "Продажи АИ-100 Taneco-bio (л/сут)",
+    "sales_DT": "Продажи ДТ (л/сут)",
+    "sales_DT_bio": "Продажи ДТ Taneco-bio (л/сут)",
+    "sales_SUG": "Продажи СУГ (л/сут)",
+    "sales_KPG": "Продажи КПГ (л/сут)",
+    "sales_SPG": "Продажи СПГ (л/сут)",
+    "total_fuel_sales": "Продажи топлива (л/сут)",
+    "promotion_fuel_active": "Акция на топливо",
+    "promotion_shop_active": "Акция в магазине",
+    "promotion_cafe_active": "Акция в кафе",
+    "corporate_customer_ratio": "Доля корп. клиентов (%)",
+    "customer_loyalty_score": "Лояльность клиентов (%)",
+    "shop_напитки_безалкогольные": "Продажи б/а напитков (руб./сут)",
+    "shop_кондитерка_снеки": "Продажи конд. изделий и снеков (руб./сут)",
+    "shop_мороженое": "Продажи мороженого (руб./сут)",
+    "shop_автотовары": "Продажи автотоваров (руб./сут)",
+    "shop_кафе_вся_еда": "Продажи кафе (руб./сут)",
+    "shop_кофе_все_горячие_напитки": "Продажи кофе (руб./сут)",
+    "shop_табак": "Продажи табака (руб./сут)",
+    "traffic_Passengers_cars_1_poputn": "Легковые авт., пол. 1 попутная",
+    "traffic_Passengers_cars_1_wstrechn": "Легковые авт., пол. 1 встречная",
+    "traffic_Passengers_cars_2_poputn": "Легковые авт., пол. 2 попутная",
+    "traffic_Passengers_cars_2_wstrechn": "Легковые авт., пол. 2 встречная",
+    "traffic_Passengers_cars_3_poputn": "Легковые авт., пол. 3 попутная",
+    "traffic_Transporter_1_poputn": "Транспортёры, пол. 1 попутная",
+    "traffic_Transporter_1_wstrechn": "Транспортёры, пол. 1 встречная",
+    "traffic_Transporter_2_poputn": "Транспортёры, пол. 2 попутная",
+    "traffic_Transporter_2_wstrechn": "Транспортёры, пол. 2 встречная",
+    "traffic_Transporter_3_poputn": "Транспортёры, пол. 3 попутная",
+    "traffic_Truck_1_poputn": "Грузовые авт., пол. 1 попутная",
+    "traffic_Truck_1_wstrechn": "Грузовые авт., пол. 1 встречная",
+    "traffic_Truck_2_poputn": "Грузовые авт., пол. 2 попутная",
+    "traffic_Truck_2_wstrechn": "Грузовые авт., пол. 2 встречная",
+    "traffic_Truck_3_poputn": "Грузовые авт., пол. 3 попутная",
+    "traffic_Truck_long_1_poputn": "Большегрузы, пол. 1 попутная",
+    "traffic_Truck_long_1_wstrechn": "Большегрузы, пол. 1 встречная",
+    "traffic_Truck_long_2_poputn": "Большегрузы, пол. 2 попутная",
+    "traffic_Truck_long_2_wstrechn": "Большегрузы, пол. 2 встречная",
+    "traffic_Truck_long_3_poputn": "Большегрузы, пол. 3 попутная",
+    "traffic_Truck_short_1_poputn": "Малые грузовые, пол. 1 попутная",
+    "traffic_Truck_short_1_wstrechn": "Малые грузовые, пол. 1 встречная",
+    "traffic_Truck_short_2_poputn": "Малые грузовые, пол. 2 попутная",
+    "traffic_Truck_short_2_wstrechn": "Малые грузовые, пол. 2 встречная",
+    "traffic_Truck_short_3_poputn": "Малые грузовые, пол. 3 попутная",
+    "traffic_Undefined_1_poputn": "Неопределённые, пол. 1 попутная",
+    "traffic_Undefined_1_wstrechn": "Неопределённые, пол. 1 встречная",
+    "traffic_Undefined_2_poputn": "Неопределённые, пол. 2 попутная",
+    "traffic_Undefined_2_wstrechn": "Неопределённые, пол. 1 встречная",
+    "traffic_Undefined_3_poputn": "Неопределённые, пол. 3 попутная",
+    "traffic_intensiv_fiz_1_poputn": "Интенс. физ., пол. 1 попутная",
+    "traffic_intensiv_fiz_1_wstrechn": "Интенс. физ., пол. 1 встречная",
+    "traffic_intensiv_fiz_2_poputn": "Интенс. физ., пол. 2 попутная",
+    "traffic_intensiv_fiz_2_wstrechn": "Интенс. физ., пол. 2 встречная",
+    "traffic_intensiv_fiz_3_poputn": "Интенс. физ., пол. 3 попутная",
+    "traffic_intensiv_priv_1_poputn": "Интенс. привед., пол. 1 попутная",
+    "traffic_intensiv_priv_1_wstrechn": "Интенс. привед., пол. 1 встречная",
+    "traffic_intensiv_priv_2_poputn": "Интенс. привед., пол. 2 попутная",
+    "traffic_intensiv_priv_2_wstrechn": "Интенс. привед., пол. 2 встречная",
+    "traffic_intensiv_priv_3_poputn": "Интенс. привед., пол. 3 попутная",
+    "traffic_plotnost_1_poputn": "Плотность, пол. 1 попутная",
+    "traffic_plotnost_1_wstrechn": "Плотность, пол. 1 встречная",
+    "traffic_plotnost_2_poputn": "Плотность, пол. 2 попутная",
+    "traffic_plotnost_2_wstrechn": "Плотность, пол. 2 встречная",
+    "traffic_plotnost_3_poputn": "Плотность, пол. 3 попутная",
+    "traffic_scorost_1_poputn": "Скорость, пол. 1 попутная",
+    "traffic_scorost_1_wstrechn": "Скорость, пол. 1 встречная",
+    "traffic_scorost_2_poputn": "Скорость, пол. 2 попутная",
+    "traffic_scorost_2_wstrechn": "Скорость, пол. 2 встречная",
+    "traffic_scorost_3_poputn": "Скорость, пол. 3 попутная",
+    "traffic_uroven_jbslugi_1_poputn": "Ур. обслуживания, пол. 1 попутная",
+    "traffic_uroven_jbslugi_1_wstrechn": "Ур. обслуживания, пол. 1 встречная",
+    "traffic_uroven_jbslugi_2_poputn": "Ур. обслуживания, пол. 2 попутная",
+    "traffic_uroven_jbslugi_3_poputn": "Ур. обслуживания, пол. 2 встречная",
+    "date_dayofyear": "День года",
+    "date_day": "День месяца"
+  },
+  "fuel_types": {
+    "АИ-92": {
+      "sales": "sales_AI92",
+      "price": "price_AI92"
+    },
+    "АИ-92 bio": {
+      "sales": "sales_AI92_bio",
+      "price": "price_AI92_bio"
+    },
+    "АИ-95": {
+      "sales": "sales_AI95",
+      "price": "price_AI95"
+    },
+    "АИ-95 bio": {
+      "sales": "sales_AI95_bio",
+      "price": "price_AI95_bio"
+    },
+    "АИ-100 bio": {
+      "sales": "sales_AI100_bio",
+      "price": "price_AI100_bio"
+    },
+    "ДТ": {
+      "sales": "sales_DT",
+      "price": "price_DT"
+    },
+    "ДТ bio": {
+      "sales": "sales_DT_bio",
+      "price": "price_DT_bio"
+    },
+    "СУГ": {
+      "sales": "sales_SUG",
+      "price": "price_SUG"
+    },
+    "КПГ": {
+      "sales": "sales_KPG",
+      "price": "price_KPG"
+    },
+    "СПГ": {
+      "sales": "sales_SPG",
+      "price": "price_SPG"
+    }
+  },
+  "traffic_lanes": {
+    "Полоса 1 попутная": "traffic_intensiv_fiz_1_poputn",
+    "Полоса 1 встречная": "traffic_intensiv_fiz_1_wstrechn",
+    "Полоса 2 попутная": "traffic_intensiv_fiz_2_poputn",
+    "Полоса 2 встречная": "traffic_intensiv_fiz_2_wstrechn",
+    "Полоса 3 попутная": "traffic_intensiv_fiz_3_poputn"
+  },
+  "vehicle_types": {
+    "Легковые": [
+      "traffic_Passengers_cars_1_poputn",
+      "traffic_Passengers_cars_1_wstrechn",
+      "traffic_Passengers_cars_2_poputn",
+      "traffic_Passengers_cars_2_wstrechn",
+      "traffic_Passengers_cars_3_poputn"
+    ],
+    "Малые грузовые": [
+      "traffic_Truck_short_1_poputn",
+      "traffic_Truck_short_1_wstrechn",
+      "traffic_Truck_short_2_poputn",
+      "traffic_Truck_short_2_wstrechn",
+      "traffic_Truck_short_3_poputn"
+    ],
+    "Большегрузы": [
+      "traffic_Truck_long_1_poputn",
+      "traffic_Truck_long_1_wstrechn",
+      "traffic_Truck_long_2_poputn",
+      "traffic_Truck_long_2_wstrechn",
+      "traffic_Truck_long_3_poputn"
+    ],
+    "Грузовые": [
+      "traffic_Truck_1_poputn",
+      "traffic_Truck_1_wstrechn",
+      "traffic_Truck_2_poputn",
+      "traffic_Truck_2_wstrechn",
+      "traffic_Truck_3_poputn",
+      "traffic_Truck_long_1_poputn",
+      "traffic_Truck_long_1_wstrechn",
+      "traffic_Truck_long_2_poputn",
+      "traffic_Truck_long_2_wstrechn",
+      "traffic_Truck_long_3_poputn",
+      "traffic_Truck_short_1_poputn",
+      "traffic_Truck_short_1_wstrechn",
+      "traffic_Truck_short_2_poputn",
+      "traffic_Truck_short_2_wstrechn",
+      "traffic_Truck_short_3_poputn"
+    ],
+    "Транспортёры": [
+      "traffic_Transporter_1_poputn",
+      "traffic_Transporter_1_wstrechn",
+      "traffic_Transporter_2_poputn",
+      "traffic_Transporter_2_wstrechn",
+      "traffic_Transporter_3_poputn"
+    ],
+    "Неопределённые": [
+      "traffic_Undefined_1_poputn",
+      "traffic_Undefined_1_wstrechn",
+      "traffic_Undefined_2_poputn",
+      "traffic_Undefined_2_wstrechn",
+      "traffic_Undefined_3_poputn"
+    ]
+  },
+  "shop_categories": {
+    "Безалкогольные напитки": "shop_напитки_безалкогольные",
+    "Кондитерские изделия и снеки": "shop_кондитерка_снеки",
+    "Мороженое": "shop_мороженое",
+    "Автотовары": "shop_автотовары",
+    "Кафе": "shop_кафе_вся_еда",
+    "Кофе": "shop_кофе_все_горячие_напитки",
+    "Табак": "shop_табак"
+  },
+  "competitor_prices": {
+    "AI92": {
+      "standard": "competitor_price_AI92",
+      "brend": "competitor_price_AI92_brend"
+    },
+    "AI95": {
+      "standard": "competitor_price_AI95",
+      "brend": "competitor_price_AI95_brend"
+    },
+    "AI100": {
+      "standard": "competitor_price_AI100"
+    },
+    "DT": {
+      "standard": "competitor_price_DT",
+      "brend": "competitor_price_DT_Brend"
+    },
+    "SUG": {
+      "standard": "competitor_price_SUG"
+    },
+    "KPG": {
+      "standard": "competitor_price_KPG"
+    },
+    "SPG": {
+      "standard": "competitor_price_SPG"
+    }
+  },
+  "special_cols": {
+    "road_col": "road_type",
+    "direction_col": "direction",
+    "distance_col": "distance_to_city_km",
+    "settlement_col": "settlement_size",
+    "weekend_col": "is_weekend",
+    "season_col": "season",
+    "holiday_col": "is_holiday",
+    "holiday_name_col": "holiday_name",
+    "temperature_col": "temperature",
+    "precipitation_col": "precipitation_mm",
+    "weather_condition_col": "weather_condition",
+    "corporate_ratio_col": "corporate_customer_ratio",
+    "loyalty_score_col": "customer_loyalty_score",
+    "promotion_fuel_col": "promotion_fuel_active",
+    "promotion_shop_col": "promotion_shop_active",
+    "promotion_cafe_col": "promotion_cafe_active"
+  },
+  "value_remaps": {
+    "station_id": {
+      "Запад-МФ-69172": "Запад-МФ-69172",
+      "Запад-МФ-69173": "Запад-МФ-69173",
+      "Запад-МФ-69603": "Запад-МФ-69603",
+      "Запад-МФ-69604": "Запад-МФ-69604",
+      "Запад-МФ-69606": "Запад-МФ-69606"
+    },
+    "station_name": {
+      "АЗС 172": "АЗС 172",
+      "АЗС 173": "АЗС 173",
+      "АЗС 603": "АЗС 603",
+      "АЗС 604": "АЗС 604",
+      "АЗС 606": "АЗС 606"
+    },
+    "road_type": {
+      "Улица в населенном пункте": "Улица в населенном пункте",
+      "Федеральная трасса": "Федеральная трасса"
+    },
+    "direction": {
+      "городская": "Городская",
+      "транзит-трассовая АЗС": "Транзит-трассовая АЗС"
+    },
+    "season": {
+      "autumn": "Осень",
+      "spring": "Весна",
+      "summer": "Лето",
+      "winter": "Зима"
+    },
+    "holiday_name": {
+      "День Победы": "День Победы",
+      "День России": "День России",
+      "День защитника Отечества": "День защитника Отечества",
+      "День народного единства": "День народного единства",
+      "Международный женский день": "Международный женский день",
+      "Новогодние каникулы": "Новогодние каникулы",
+      "Новый год": "Новый год",
+      "Праздник Весны и Труда": "Праздник Весны и Труда",
+      "Рождество Христово": "Рождество Христово"
+    }
+  }
+}
