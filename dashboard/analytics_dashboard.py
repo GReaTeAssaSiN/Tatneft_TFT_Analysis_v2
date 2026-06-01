@@ -878,15 +878,18 @@ with tab_eda:
                     if _el_m:
                         _sc_col = fuel_types[_el_m["fuel"]].get("sales")
                         if _sc_col and _sc_col in df.columns:
-                            fig = px.scatter(
-                                df, x=_el_m["own"], y=_sc_col,
-                                color=group_col, trendline="ols",
-                                labels={
-                                    _el_m["own"]: lbl(_el_m["own"]),
-                                    _sc_col: lbl(_sc_col),
-                                    group_col: lbl(group_col),
-                                },
-                            )
+                            import warnings as _w_el
+                            with _w_el.catch_warnings():
+                                _w_el.simplefilter("ignore", RuntimeWarning)
+                                fig = px.scatter(
+                                    df, x=_el_m["own"], y=_sc_col,
+                                    color=group_col, trendline="ols",
+                                    labels={
+                                        _el_m["own"]: lbl(_el_m["own"]),
+                                        _sc_col: lbl(_sc_col),
+                                        group_col: lbl(group_col),
+                                    },
+                                )
                             fig.update_layout(legend_title=lbl(group_col))
                             _pchart(fig)
 
@@ -1063,15 +1066,18 @@ with tab_eda:
                     st.markdown("#### Трафик → Продажи")
                     _trs = dfw.copy()
                     _trs["_traffic"] = _trs[_fiz_cols].sum(axis=1)
-                    fig = px.scatter(
-                        _trs, x="_traffic", y=total_sales_col,
-                        color=group_col, trendline="ols",
-                        labels={
-                            "_traffic": "Суммарный трафик (авт/ч)",
-                            total_sales_col: lbl(total_sales_col),
-                            group_col: lbl(group_col),
-                        },
-                    )
+                    import warnings as _w_tr
+                    with _w_tr.catch_warnings():
+                        _w_tr.simplefilter("ignore", RuntimeWarning)
+                        fig = px.scatter(
+                            _trs, x="_traffic", y=total_sales_col,
+                            color=group_col, trendline="ols",
+                            labels={
+                                "_traffic": "Суммарный трафик (авт/ч)",
+                                total_sales_col: lbl(total_sales_col),
+                                group_col: lbl(group_col),
+                            },
+                        )
                     fig.update_layout(showlegend=False)
                     _pchart(fig)
 
@@ -2027,6 +2033,20 @@ with tab_forecast:
         with sub_eval:
             st.divider()
 
+            # Реальные значения из merged для периода прогноза (для корректного MAPE)
+            _eval_actual: pd.DataFrame | None = None
+            if ("date" in pred_df.columns and date_col
+                    and date_col in merged.columns and group_col in merged.columns):
+                _pred_date_set = set(pred_df["date"].dt.date)
+                _ea_sub = merged[
+                    pd.to_datetime(merged[date_col]).dt.date.isin(_pred_date_set)
+                ].copy()
+                if not _ea_sub.empty:
+                    _ea_tgt_cols = [t for t in _fc_targets if t in merged.columns]
+                    _eval_actual = _ea_sub[[group_col, date_col] + _ea_tgt_cols].copy()
+                    _eval_actual = _eval_actual.rename(columns={date_col: "date"})
+                    _eval_actual["date"] = pd.to_datetime(_eval_actual["date"])
+
             # ── Метрики качества ──────────────────────────────────────────────────
             st.markdown("### 📊 Метрики качества")
 
@@ -2034,25 +2054,47 @@ with tab_forecast:
             _mape_by_st: dict[str, dict] = {}
 
             for _ft in _fc_targets:
-                _ac, _pr = _ft, f"{_ft}_pred"
-                if _ac not in pred_df.columns or _pr not in pred_df.columns:
+                # Прогноз = Q_MED (сохранён в колонке _ft); факт = из merged
+                if _ft not in pred_df.columns:
                     continue
-                _cdf = pred_df[[group_col, _ac, _pr]].dropna()
-                if _cdf.empty:
+                if _eval_actual is not None and _ft in _eval_actual.columns:
+                    _pjoin = pred_df[[group_col, "date", _ft]].copy()
+                    _ajoin = _eval_actual[[group_col, "date", _ft]].rename(columns={_ft: "_actual"})
+                    _cdf = _pjoin.merge(_ajoin, on=[group_col, "date"], how="inner").dropna(
+                        subset=["_actual", _ft]
+                    )
+                    if _cdf.empty:
+                        continue
+                    _a, _p = _cdf["_actual"], _cdf[_ft]
+                elif f"{_ft}_pred" in pred_df.columns:
+                    # fallback: нет актуальных данных — сравниваем Q_MED и (q10+q90)/2
+                    _cdf = pred_df[[group_col, _ft, f"{_ft}_pred"]].dropna().copy()
+                    _cdf = _cdf.rename(columns={_ft: "_actual", f"{_ft}_pred": _ft})
+                    if _cdf.empty:
+                        continue
+                    _a, _p = _cdf["_actual"], _cdf[_ft]
+                else:
                     continue
-                _a, _p = _cdf[_ac], _cdf[_pr]
                 _mae  = float(np.abs(_a - _p).mean())
                 _rmse = float(np.sqrt(((_a - _p) ** 2).mean()))
 
                 # MAPE только на строках где факт значимо > 0 (избегаем деление на ~0)
-                _thresh = max(_a.quantile(0.05), 1e-2)
+                _thresh = max(float(_a.quantile(0.05)), 1e-2)
                 _mask   = _a > _thresh
                 if _mask.sum() >= 5:
                     _mape = float((np.abs(_a[_mask] - _p[_mask]) / _a[_mask]).mean() * 100)
+                elif (np.abs(_a) + np.abs(_p)).sum() < 1e-6:
+                    # Оба ряда практически нулевые — MAPE не определён
+                    continue
                 else:
-                    # Слишком мало ненулевых — используем sMAPE (симметричный, не взрывается)
-                    _denom = (np.abs(_a) + np.abs(_p)).replace(0, np.nan)
-                    _mape  = float((2 * np.abs(_a - _p) / _denom).mean() * 100)
+                    # Мало ненулевых — sMAPE (симметричный)
+                    _denom = (np.abs(_a) + np.abs(_p))
+                    _valid = _denom > 1e-9
+                    if _valid.sum() < 3:
+                        continue
+                    _mape = float(
+                        (2 * np.abs(_a[_valid] - _p[_valid]) / _denom[_valid]).mean() * 100
+                    )
 
                 _ss_res = float(((_a - _p) ** 2).sum())
                 _ss_tot = float(((_a - _a.mean()) ** 2).sum())
@@ -2068,25 +2110,26 @@ with tab_forecast:
                 })
 
                 def _st_mape(grp: pd.DataFrame) -> float:
-                    _ga, _gp = grp[_ac], grp[_pr]
-                    _th = max(_ga.quantile(0.05), 1e-2)
+                    _ga, _gp = grp["_actual"], grp["_pred"]
+                    _th = max(float(_ga.quantile(0.05)), 1e-2)
                     _m  = _ga > _th
-                    if _m.sum() >= 3:
-                        return float((np.abs(_ga[_m] - _gp[_m]) / _ga[_m]).mean() * 100)
-                    _dn = (np.abs(_ga) + np.abs(_gp)).replace(0, np.nan)
-                    return float((2 * np.abs(_ga - _gp) / _dn).mean() * 100)
+                    if _m.sum() < 3:
+                        # Слишком мало значимых точек — не определён
+                        return float("nan")
+                    return float((np.abs(_ga[_m] - _gp[_m]) / _ga[_m]).mean() * 100)
 
+                _cdf_st = _cdf.rename(columns={_ft: "_pred"}).copy()
                 _mape_by_st[_ft] = {
-                    str(_st): _st_mape(_g) for _st, _g in _cdf.groupby(group_col)
+                    str(_st): _st_mape(_g) for _st, _g in _cdf_st.groupby(group_col)
                 }
 
             if _met_rows:
                 # ── KPI карточки ──────────────────────────────────────────────────
                 _all_mapes = [r["_mape_raw"] for r in _met_rows]
                 _all_r2s   = [r["_r2_raw"] for r in _met_rows if not np.isnan(r["_r2_raw"])]
-                _med_mape  = float(np.median(_all_mapes))
-                _med_r2    = float(np.median(_all_r2s)) if _all_r2s else float("nan")
-                _pct_good  = sum(m <= 15 for m in _all_mapes) / len(_all_mapes) * 100
+                _med_mape  = float(np.nanmedian(_all_mapes))
+                _med_r2    = float(np.nanmedian(_all_r2s)) if _all_r2s else float("nan")
+                _pct_good  = sum(m <= 15 for m in _all_mapes if not np.isnan(m)) / max(len(_all_mapes), 1) * 100
 
                 def _fc_kpi(title: str, value: str, sub: str = "", color: str = "#2196F3") -> str:
                     _sub = (f'<div style="color:#9ca3af;font-size:11px;margin-top:3px;">{sub}</div>'
@@ -2180,16 +2223,24 @@ with tab_forecast:
                 # ── Heatmap MAPE станция × таргет ────────────────────────────────
                 if _mape_by_st:
                     st.markdown("#### MAPE: станция × таргет")
+                    st.caption("Серые ячейки — таргет практически нулевой на данной станции, MAPE не определён.")
                     _hm_df = pd.DataFrame(
                         {lbl(_ft): _mape_by_st[_ft] for _ft in _fc_targets if _ft in _mape_by_st}
                     ).T
+                    # NaN → пустая строка на графике
+                    _text_hm = _hm_df.map(
+                        lambda v: f"{v:.1f}" if v == v else ""  # v!=v только для NaN
+                    )
                     fig = px.imshow(
                         _hm_df,
                         color_continuous_scale=["#4CAF50", "#FF9800", "#f44336"],
                         zmin=0, zmax=40,
-                        text_auto=".1f",
                         aspect="auto",
                         labels={"color": "MAPE (%)", "x": lbl(group_col), "y": "Таргет"},
+                    )
+                    fig.update_traces(
+                        text=_text_hm.values,
+                        texttemplate="%{text}",
                     )
                     _pchart(fig)
 
@@ -2211,31 +2262,41 @@ with tab_forecast:
                 )
 
             _fdf = pred_df[pred_df[group_col] == _sel_fc_st].sort_values("date").copy()
-            _ac  = _sel_fc_tgt
-            _pr  = f"{_sel_fc_tgt}_pred"
             _q10 = f"{_sel_fc_tgt}_q10"
             _q90 = f"{_sel_fc_tgt}_q90"
 
-            if "date" in _fdf.columns and _ac in _fdf.columns:
+            if "date" in _fdf.columns and _sel_fc_tgt in _fdf.columns:
                 _pred_start = _fdf["date"].min()
+                _pred_end   = _fdf["date"].max()
 
-                # История из merged до начала прогноза
+                # История из merged ДО начала прогноза
                 _hist_df = None
-                if date_col and date_col in merged.columns and _ac in merged.columns:
+                if date_col and date_col in merged.columns and _sel_fc_tgt in merged.columns:
                     _hist_raw = merged[
                         (merged[group_col] == _sel_fc_st) &
                         (merged[date_col] < _pred_start) &
                         (merged[date_col] >= _pred_start - pd.Timedelta(days=_hist_days))
-                    ][[date_col, _ac]].dropna().sort_values(date_col)
+                    ][[date_col, _sel_fc_tgt]].dropna().sort_values(date_col)
                     if not _hist_raw.empty:
                         _hist_df = _hist_raw
+
+                # Реальный факт В периоде прогноза (из merged)
+                _fact_period = None
+                if date_col and date_col in merged.columns and _sel_fc_tgt in merged.columns:
+                    _fp_raw = merged[
+                        (merged[group_col] == _sel_fc_st) &
+                        (merged[date_col] >= _pred_start) &
+                        (merged[date_col] <= _pred_end)
+                    ][[date_col, _sel_fc_tgt]].dropna().sort_values(date_col)
+                    if not _fp_raw.empty:
+                        _fact_period = _fp_raw
 
                 fig = go.Figure()
 
                 # История (серая)
                 if _hist_df is not None:
                     fig.add_trace(go.Scatter(
-                        x=_hist_df[date_col], y=_hist_df[_ac],
+                        x=_hist_df[date_col], y=_hist_df[_sel_fc_tgt],
                         mode="lines", name=f"История ({_hist_days} дн.)",
                         line=dict(color="#6b7280", width=1.5),
                         opacity=0.7,
@@ -2267,20 +2328,20 @@ with tab_forecast:
                         name="Интервал q10–q90", hoverinfo="skip",
                     ))
 
-                # Факт в периоде прогноза
-                fig.add_trace(go.Scatter(
-                    x=_fdf["date"], y=_fdf[_ac],
-                    mode="lines", name="Факт",
-                    line=dict(color="#4CAF50", width=2),
-                ))
-
-                # Прогноз (медиана)
-                if _pr in _fdf.columns:
+                # Реальный факт в периоде прогноза (из merged, зелёный)
+                if _fact_period is not None:
                     fig.add_trace(go.Scatter(
-                        x=_fdf["date"], y=_fdf[_pr],
-                        mode="lines", name="Прогноз (медиана)",
-                        line=dict(color="#2196F3", width=2, dash="dash"),
+                        x=_fact_period[date_col], y=_fact_period[_sel_fc_tgt],
+                        mode="lines", name="Факт",
+                        line=dict(color="#4CAF50", width=2),
                     ))
+
+                # Прогноз (медиана Q_MED из CSV, синий пунктир)
+                fig.add_trace(go.Scatter(
+                    x=_fdf["date"], y=_fdf[_sel_fc_tgt],
+                    mode="lines", name="Прогноз (медиана)",
+                    line=dict(color="#2196F3", width=2, dash="dash"),
+                ))
 
                 fig.update_layout(
                     xaxis_title="Дата",
@@ -2294,27 +2355,48 @@ with tab_forecast:
 
             # ── Анализ ошибок ─────────────────────────────────────────────────────
             st.markdown("### 🔍 Анализ ошибок")
-            _ac = _sel_fc_tgt
-            _pr = f"{_sel_fc_tgt}_pred"
 
-            if _ac in pred_df.columns and _pr in pred_df.columns:
-                _err = pred_df[[group_col, "date", _ac, _pr]].dropna().copy()
-                _err["_err"] = _err[_pr] - _err[_ac]
+            # Факт из merged + прогноз Q_MED из pred_df
+            _err = None
+            if _sel_fc_tgt in pred_df.columns and "date" in pred_df.columns:
+                _err_pred = pred_df[[group_col, "date", _sel_fc_tgt]].copy()
+                if _eval_actual is not None and _sel_fc_tgt in _eval_actual.columns:
+                    _err_act = _eval_actual[[group_col, "date", _sel_fc_tgt]].rename(
+                        columns={_sel_fc_tgt: "_actual"}
+                    )
+                    _err = _err_pred.merge(_err_act, on=[group_col, "date"], how="inner").dropna()
+                    _err["_err"] = _err[_sel_fc_tgt] - _err["_actual"]
+                else:
+                    # fallback: нет актуальных — ошибка между Q_MED и (q10+q90)/2
+                    _pr_col = f"{_sel_fc_tgt}_pred"
+                    if _pr_col in pred_df.columns:
+                        _err = pred_df[[group_col, "date", _sel_fc_tgt, _pr_col]].dropna().copy()
+                        _err = _err.rename(columns={_sel_fc_tgt: "_pred_qmed", _pr_col: "_actual"})
+                        _err["_err"] = _err["_pred_qmed"] - _err["_actual"]
+                        _err[_sel_fc_tgt] = _err["_pred_qmed"]
+
+            if _err is not None and not _err.empty:
 
                 _ea1, _ea2 = st.columns(2)
                 with _ea1:
                     st.markdown("#### Scatter: факт vs прогноз")
-                    fig = px.scatter(
-                        _err, x=_ac, y=_pr, color=group_col,
-                        trendline="ols",
-                        labels={
-                            _ac: lbl(_ac) + " (факт)",
-                            _pr: lbl(_ac) + " (прогноз)",
-                            group_col: lbl(group_col),
-                        },
-                    )
-                    _xy_min = min(_err[_ac].min(), _err[_pr].min())
-                    _xy_max = max(_err[_ac].max(), _err[_pr].max())
+                    _sc_x = "_actual" if "_actual" in _err.columns else _sel_fc_tgt
+                    _sc_y = _sel_fc_tgt
+                    _has_variance = (_err[_sc_x].std() > 1e-6 and _err[_sc_y].std() > 1e-6)
+                    import warnings as _w_sc
+                    with _w_sc.catch_warnings():
+                        _w_sc.simplefilter("ignore", RuntimeWarning)
+                        fig = px.scatter(
+                            _err, x=_sc_x, y=_sc_y, color=group_col,
+                            trendline="ols" if _has_variance else None,
+                            labels={
+                                _sc_x: lbl(_sel_fc_tgt) + " (факт)",
+                                _sc_y: lbl(_sel_fc_tgt) + " (прогноз)",
+                                group_col: lbl(group_col),
+                            },
+                        )
+                    _xy_min = min(_err[_sc_x].min(), _err[_sc_y].min())
+                    _xy_max = max(_err[_sc_x].max(), _err[_sc_y].max())
                     fig.add_trace(go.Scatter(
                         x=[_xy_min, _xy_max], y=[_xy_min, _xy_max],
                         mode="lines", name="Идеал",
