@@ -1328,81 +1328,128 @@ with tab_eda:
         if not _has_promo and not _has_hol:
             st.info("Нет данных об акциях и праздниках в текущей сессии.")
         else:
-            def _promo_map(col: str, src: pd.DataFrame) -> pd.Series:
-                return src[col].fillna(0).astype(float).astype(int).map(
-                    {0: "Без акции", 1: "С акцией"}
-                )
+            def _promo_labels(col: str) -> dict[int, str]:
+                """Возвращает маппинг raw_value → читаемая метка для колонки акции."""
+                _vlbls = (inv or {}).get(col, {}).get("value_labels", {})
+                raw_vals = sorted(df[col].dropna().astype(float).astype(int).unique())
+                result: dict[int, str] = {}
+                for v in raw_vals:
+                    result[v] = _vlbls.get(str(v), ("Без акции" if v == 0 else f"Акция тип {v}"))
+                return result
+
+            def _promo_series(col: str, src: pd.DataFrame) -> pd.Series:
+                _lm = _promo_labels(col)
+                return src[col].fillna(0).astype(float).astype(int).map(_lm)
 
             # ── Блок: Акции ───────────────────────────────────────────────────
             if _has_promo:
                 st.markdown("### 🎯 Акции")
 
+                # Фильтр по типам акций (показывается если типов > 2)
+                _all_promo_types: dict[str, list] = {}
+                for _pcol in _promo_cols:
+                    _lm = _promo_labels(_pcol)
+                    _all_promo_types[_pcol] = list(_lm.values())
+
+                _max_types = max((len(v) for v in _all_promo_types.values()), default=0)
+                _area_names = {
+                    promo_fuel_col: "топливо",
+                    promo_shop_col: "магазин",
+                    promo_cafe_col: "кафе",
+                }
+                _sel_promo_types: dict[str, list] = {}
+                _flt_cols = st.columns(len(_promo_cols))
+                for _i, _pcol in enumerate(_promo_cols):
+                    _opts = _all_promo_types[_pcol]
+                    with _flt_cols[_i]:
+                        _sel_promo_types[_pcol] = st.multiselect(
+                            f"Типы акции — {_area_names.get(_pcol, _pcol)}",
+                            options=_opts, default=_opts,
+                            key=f"promo_filter_{_pcol}_{_sk}",
+                        )
+
+                def _filter_promo(src: pd.DataFrame, col: str) -> pd.DataFrame:
+                    _allowed = _sel_promo_types.get(col, _all_promo_types.get(col, []))
+                    _s = _promo_series(col, src)
+                    return src[_s.isin(_allowed)].copy() if _allowed else src.copy()
+
                 _pr1, _pr2 = st.columns(2)
                 with _pr1:
                     if promo_fuel_col and promo_fuel_col in df.columns and total_sales_col and total_sales_col in df.columns:
                         st.markdown("#### Эффект акции на продажи топлива")
-                        _pf = df.copy()
-                        _pf["_promo"] = _promo_map(promo_fuel_col, _pf)
-                        fig = px.box(
-                            _pf, x="_promo", y=total_sales_col, color="_promo",
-                            category_orders={"_promo": ["Без акции", "С акцией"]},
-                            labels={"_promo": "Акция на топливо", total_sales_col: lbl(total_sales_col)},
-                            points="outliers",
-                        )
-                        fig.update_layout(showlegend=False)
-                        _pchart(fig)
+                        _pf = _filter_promo(df, promo_fuel_col)
+                        _fuel_lmap = _promo_labels(promo_fuel_col)
+                        _pf["_promo"] = _promo_series(promo_fuel_col, _pf)
+                        _fuel_order = [v for v in [_fuel_lmap[k] for k in sorted(_fuel_lmap)] if v in _sel_promo_types.get(promo_fuel_col, [])]
+                        if not _pf.empty:
+                            fig = px.box(
+                                _pf, x="_promo", y=total_sales_col, color="_promo",
+                                category_orders={"_promo": _fuel_order},
+                                labels={"_promo": "Тип акции", total_sales_col: lbl(total_sales_col)},
+                                points="outliers",
+                            )
+                            fig.update_layout(showlegend=False)
+                            _pchart(fig)
 
                 with _pr2:
                     _shop_cols = [v for v in shop_cats.values() if v in df.columns]
                     if promo_shop_col and promo_shop_col in df.columns and _shop_cols:
                         st.markdown("#### Эффект акции в магазине")
-                        _ps = df.copy()
+                        _ps = _filter_promo(df, promo_shop_col)
+                        _shop_lmap = _promo_labels(promo_shop_col)
                         _ps["_shop_total"] = _ps[_shop_cols].sum(axis=1)
-                        _ps["_promo"] = _promo_map(promo_shop_col, _ps)
-                        fig = px.box(
-                            _ps, x="_promo", y="_shop_total", color="_promo",
-                            category_orders={"_promo": ["Без акции", "С акцией"]},
-                            labels={"_promo": "Акция в магазине", "_shop_total": "Выручка магазина (руб.)"},
-                            points="outliers",
-                        )
-                        fig.update_layout(showlegend=False)
-                        _pchart(fig)
+                        _ps["_promo"] = _promo_series(promo_shop_col, _ps)
+                        _shop_order = [v for v in [_shop_lmap[k] for k in sorted(_shop_lmap)] if v in _sel_promo_types.get(promo_shop_col, [])]
+                        if not _ps.empty:
+                            fig = px.box(
+                                _ps, x="_promo", y="_shop_total", color="_promo",
+                                category_orders={"_promo": _shop_order},
+                                labels={"_promo": "Тип акции", "_shop_total": "Выручка магазина (руб.)"},
+                                points="outliers",
+                            )
+                            fig.update_layout(showlegend=False)
+                            _pchart(fig)
 
                 _pr3, _pr4 = st.columns(2)
                 with _pr3:
                     _cafe_col = shop_cats.get("Кафе")
                     if promo_cafe_col and promo_cafe_col in df.columns and _cafe_col and _cafe_col in df.columns:
                         st.markdown("#### Эффект акции в кафе")
-                        _pc = df.copy()
-                        _pc["_promo"] = _promo_map(promo_cafe_col, _pc)
-                        fig = px.box(
-                            _pc, x="_promo", y=_cafe_col, color="_promo",
-                            category_orders={"_promo": ["Без акции", "С акцией"]},
-                            labels={"_promo": "Акция в кафе", _cafe_col: lbl(_cafe_col)},
-                            points="outliers",
-                        )
-                        fig.update_layout(showlegend=False)
-                        _pchart(fig)
+                        _pc = _filter_promo(df, promo_cafe_col)
+                        _cafe_lmap = _promo_labels(promo_cafe_col)
+                        _pc["_promo"] = _promo_series(promo_cafe_col, _pc)
+                        _cafe_order = [v for v in [_cafe_lmap[k] for k in sorted(_cafe_lmap)] if v in _sel_promo_types.get(promo_cafe_col, [])]
+                        if not _pc.empty:
+                            fig = px.box(
+                                _pc, x="_promo", y=_cafe_col, color="_promo",
+                                category_orders={"_promo": _cafe_order},
+                                labels={"_promo": "Тип акции", _cafe_col: lbl(_cafe_col)},
+                                points="outliers",
+                            )
+                            fig.update_layout(showlegend=False)
+                            _pchart(fig)
 
                 with _pr4:
                     if _has_date_pr:
                         st.markdown("#### Активность акций по месяцам")
                         _act = df.copy()
                         _act["_month"] = _act[date_col].dt.to_period("M").astype(str)
-                        _promo_labels = {
+                        _promo_area_labels = {
                             promo_fuel_col: "Топливо",
                             promo_shop_col: "Магазин",
                             promo_cafe_col: "Кафе",
                         }
                         _act_rows: list[pd.DataFrame] = []
                         for _pcol in _promo_cols:
+                            # считаем дни где акция активна (значение > 0), не суммируем коды
+                            _act["_active"] = (_act[_pcol].fillna(0).astype(float) > 0).astype(int)
                             _a = (
-                                _act.groupby([date_col, "_month"])[_pcol].max()
+                                _act.groupby([date_col, "_month"])["_active"].max()
                                 .reset_index()
-                                .groupby("_month")[_pcol].sum()
+                                .groupby("_month")["_active"].sum()
                                 .reset_index(name="Дней")
                             )
-                            _a["Акция"] = _promo_labels.get(_pcol, _pcol)
+                            _a["Акция"] = _promo_area_labels.get(_pcol, _pcol)
                             _act_rows.append(_a)
                         if _act_rows:
                             fig = px.bar(
@@ -1421,7 +1468,8 @@ with tab_eda:
                 if len(_promo_cols) > 1 and total_sales_col and total_sales_col in df.columns:
                     st.markdown("#### Эффект одновременных акций на продажи топлива")
                     _multi = df.copy()
-                    _multi["_n"] = _multi[_promo_cols].fillna(0).astype(float).astype(int).sum(axis=1)
+                    # считаем количество активных акций (> 0), а не сумму кодов
+                    _multi["_n"] = (_multi[_promo_cols].fillna(0).astype(float) > 0).sum(axis=1)
                     _lmap_n = {0: "0 акций", 1: "1 акция", 2: "2 акции", 3: "3 акции"}
                     _multi["_n_label"] = _multi["_n"].map(_lmap_n).fillna("3+ акции")
                     _order = [_lmap_n[k] for k in range(len(_promo_cols) + 1) if k in _lmap_n]
@@ -1729,6 +1777,8 @@ with tab_eda:
         ]
         if _static_cols:
             _tbl = df.groupby(group_col)[_static_cols].first().reset_index()
+            for _sc in _static_cols:
+                _tbl[_sc] = decode_col_series(_tbl[_sc], _sc, inv)
             _tbl.columns = [lbl(c) for c in _tbl.columns]
             st.dataframe(_tbl, width="stretch", hide_index=True)
         else:
@@ -1773,11 +1823,33 @@ with tab_stat:
     # ── Распределение до / после нормализации ─────────────────────────────────
     if proc is not None and inv:
         st.markdown("### 📊 Распределение до / после нормализации")
-        _common = [c for c in inv if c in merged.columns and c in proc.columns]
-        if _common:
+
+        # Строим маппинг: оригинальная колонка → колонка в proc (трансформированная)
+        _proc_col_map: dict[str, str] = {}
+        for _c, _cfg in inv.items():
+            if _c not in merged.columns:
+                continue
+            _m = _cfg.get("method", "none")
+            _p = _cfg.get("params", {})
+            if _m in ("log1p", "zscore", "minmax", "robust", "none", "fillna"):
+                if _c in proc.columns:
+                    _proc_col_map[_c] = _c          # имя то же, значения другие
+            elif _m == "label_enc":
+                _enc = _p.get("enc_col", f"{_c}_enc")
+                if _enc in proc.columns:
+                    _proc_col_map[_c] = _enc         # _enc — трансформированная
+            elif _m == "cyclical":
+                _sc = _p.get("sin_col", f"{_c}_sin")
+                if _sc in proc.columns:
+                    _proc_col_map[_c] = _sc          # показываем sin-компоненту
+
+        if _proc_col_map:
             _sel_hist = st.selectbox(
-                "Колонка", _common, format_func=lbl, key="stat_hist_col"
+                "Колонка", list(_proc_col_map.keys()), format_func=lbl, key="stat_hist_col"
             )
+            _proc_hist_col = _proc_col_map[_sel_hist]
+            _method_lbl = inv.get(_sel_hist, {}).get("method", "")
+
             _hh1, _hh2 = st.columns(2)
             with _hh1:
                 st.markdown(f"**До** — {lbl(_sel_hist)}")
@@ -1787,10 +1859,14 @@ with tab_stat:
                 )
                 _pchart(fig)
             with _hh2:
-                st.markdown("**После** (нормализовано)")
+                _after_lbl = (
+                    f"{lbl(_sel_hist)} → {_proc_hist_col}" if _proc_hist_col != _sel_hist
+                    else lbl(_sel_hist)
+                )
+                st.markdown(f"**После** ({_method_lbl}) — {_after_lbl}")
                 fig = px.histogram(
-                    proc, x=_sel_hist, nbins=40,
-                    labels={_sel_hist: lbl(_sel_hist)},
+                    proc, x=_proc_hist_col, nbins=40,
+                    labels={_proc_hist_col: _after_lbl},
                     color_discrete_sequence=["#ff7043"],
                 )
                 _pchart(fig)
