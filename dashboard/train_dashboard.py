@@ -1372,26 +1372,41 @@ with tab2:
                    subtitle=f"{len(st.session_state.train_output)} строк" if has_output else "")
 
     if has_output:
-        _raw_total    = len(st.session_state.train_output)
-        display_lines = st.session_state.train_output[-300:]
-        colored_html, _deduped_count = render_output_html(display_lines)
+        _raw_total  = len(st.session_state.train_output)
+        _full_log   = st.toggle("Полный лог", value=False, key="train_full_log")
+
+        if _full_log:
+            _show_lines = st.session_state.train_output[-2000:]
+            import re as _re2
+            _ansi_strip = _re2.compile(r'\x1b\[[0-9;]*m')
+            _raw_html = "<br>".join(
+                _re2.sub(r'<', '&lt;', _re2.sub(r'&', '&amp;',
+                    _ansi_strip.sub('', l).replace('\r', '')))
+                for l in _show_lines
+            )
+            _caption = f"Показаны последние {len(_show_lines)} из {_raw_total} сырых строк."
+        else:
+            display_lines = st.session_state.train_output[-300:]
+            _raw_html, _deduped_count = render_output_html(display_lines)
+            _caption = (
+                f"Показаны последние {_deduped_count} строк"
+                f" (из {_raw_total} сырых, после дедупликации)."
+            ) if _raw_total > 300 else None
+
         st.markdown(f"""
 <div style="background:#0a0e17;border:1px solid {GRID};border-radius:6px;
             padding:12px 16px;height:440px;overflow-y:auto;
             font-family:'Consolas','Courier New',monospace;
             font-size:11px;line-height:1.6;white-space:pre-wrap;"
      id="train-out">
-{colored_html}
+{_raw_html}
 </div>
 <script>
 const el = document.getElementById('train-out');
 if(el) el.scrollTop = el.scrollHeight;
 </script>""", unsafe_allow_html=True)
-        if _raw_total > 300:
-            st.caption(
-                f"Показаны последние {_deduped_count} строк"
-                f" (из {_raw_total} сырых, после дедупликации)."
-            )
+        if _caption:
+            st.caption(_caption)
     else:
         st.markdown(
             f"<div style='color:{GRAY};font-size:12px;padding:40px 0;text-align:center;'>"
@@ -1494,67 +1509,66 @@ with tab3:
         import pandas as _pd
 
         fig = go.Figure()
-        n = len(all_versions)
-        _old_train_shown = False
-        _old_val_shown   = False
 
-        for i, (label, train_df, val_df) in enumerate(all_versions):
-            is_latest = (i == n - 1)
-            if is_latest:
-                if train_df is not None and len(train_df):
-                    fig.add_trace(go.Scatter(
-                        x=train_df["step"], y=train_df["value"],
-                        name=f"Train loss ({label})",
-                        mode="lines",
-                        line=dict(color=GOLD, width=2.5),
-                    ))
-                if val_df is not None and len(val_df):
-                    _single = len(val_df) == 1
-                    fig.add_trace(go.Scatter(
-                        x=val_df["step"], y=val_df["value"],
-                        name=f"Val loss ({label})",
-                        mode="markers" if _single else "lines+markers",
-                        line=dict(color=GREEN, width=2),
-                        marker=dict(size=10 if _single else 6, color=GREEN),
-                    ))
-                    if not _single:
-                        bi = val_df["value"].idxmin()
-                        fig.add_trace(go.Scatter(
-                            x=[val_df.loc[bi, "step"]],
-                            y=[val_df.loc[bi, "value"]],
-                            mode="markers+text",
-                            name=f"Best val: {val_df['value'].min():.4f}",
-                            marker=dict(symbol="star", size=16, color=GREEN),
-                            text=[f"  {val_df['value'].min():.4f}"],
-                            textfont=dict(color=GREEN, size=11),
-                            textposition="middle right",
-                        ))
-            else:
-                if train_df is not None and len(train_df):
-                    fig.add_trace(go.Scatter(
-                        x=train_df["step"], y=train_df["value"],
-                        name="Train (прошлые)", mode="lines",
-                        line=dict(color=GREEN, width=1.2), opacity=0.45,
-                        legendgroup="old_train",
-                        showlegend=not _old_train_shown,
-                    ))
-                    _old_train_shown = True
-                if val_df is not None and len(val_df):
-                    fig.add_trace(go.Scatter(
-                        x=val_df["step"], y=val_df["value"],
-                        name="Val (прошлые)", mode="markers",
-                        marker=dict(size=7, color=GREEN, opacity=0.5),
-                        legendgroup="old_val",
-                        showlegend=not _old_val_shown,
-                    ))
-                    _old_val_shown = True
+        def _epochs(df):
+            """Replace step numbers with epoch indices 1, 2, 3..."""
+            if df is None or len(df) == 0:
+                return df
+            import pandas as _pd2
+            return _pd2.DataFrame({
+                "step":      list(range(1, len(df) + 1)),
+                "value":     df["value"].tolist(),
+                "wall_time": df["wall_time"].tolist() if "wall_time" in df.columns else [None]*len(df),
+            })
+
+        # Склеиваем все версии в единый ряд по эпохам
+        import pandas as _pd
+        _all_tr_vals, _all_vl_vals = [], []
+        for _, td, vd in all_versions:
+            if td is not None and len(td) > 0:
+                _all_tr_vals.extend(td["value"].tolist())
+            if vd is not None and len(vd) > 0:
+                _all_vl_vals.extend(vd["value"].tolist())
+
+        if _all_tr_vals:
+            _tr_x = list(range(1, len(_all_tr_vals) + 1))
+            _single_tr = len(_all_tr_vals) == 1
+            fig.add_trace(go.Scatter(
+                x=_tr_x, y=_all_tr_vals,
+                name="Обучающая выборка",
+                mode="markers" if _single_tr else "lines+markers",
+                line=dict(color=GOLD, width=2.5),
+                marker=dict(size=8 if _single_tr else 5, color=GOLD),
+            ))
+
+        if _all_vl_vals:
+            _vl_x = list(range(1, len(_all_vl_vals) + 1))
+            _single_vl = len(_all_vl_vals) == 1
+            fig.add_trace(go.Scatter(
+                x=_vl_x, y=_all_vl_vals,
+                name="Валидационная выборка",
+                mode="markers" if _single_vl else "lines+markers",
+                line=dict(color=GREEN, width=2),
+                marker=dict(size=10 if _single_vl else 6, color=GREEN),
+            ))
+            if not _single_vl:
+                _best_idx = int(_pd.Series(_all_vl_vals).idxmin())
+                fig.add_trace(go.Scatter(
+                    x=[_vl_x[_best_idx]], y=[_all_vl_vals[_best_idx]],
+                    mode="markers+text",
+                    name=f"Лучший результат: {_all_vl_vals[_best_idx]:.4f}",
+                    marker=dict(symbol="star", size=16, color=GREEN),
+                    text=[f"  {_all_vl_vals[_best_idx]:.4f}"],
+                    textfont=dict(color=GREEN, size=11),
+                    textposition="middle right",
+                ))
 
         fig.update_layout(
             paper_bgcolor=CARD_BG, plot_bgcolor=CARD_BG,
             font=dict(color="#c9d1d9", size=11),
-            xaxis=dict(title="Шаг обучения", gridcolor=GRID,
-                       zerolinecolor=GRID, tickformat=",d"),
-            yaxis=dict(title="QuantileLoss", gridcolor=GRID, zerolinecolor=GRID),
+            xaxis=dict(title="Эпоха", gridcolor=GRID,
+                       zerolinecolor=GRID, tickformat=",d", dtick=1),
+            yaxis=dict(title="Потери (QuantileLoss)", gridcolor=GRID, zerolinecolor=GRID),
             legend=dict(orientation="h", yanchor="bottom", y=1.02,
                         xanchor="left", x=0, bgcolor="rgba(0,0,0,0)"),
             margin=dict(l=55, r=20, t=55, b=50),
