@@ -3145,6 +3145,60 @@ with tab_forecast:
                                             f"{_wim[_wi_q90_col].max():,.0f}" if _wi_q90_col in _wim.columns else "—",
                                             f"{_wim[_wi_q10_col].max():,.0f}" if _wi_q10_col in _wim.columns else "—"],
                             }), hide_index=True, width="stretch")
+
+                            st.divider()
+                            st.markdown("#### 💾 Сохранить сценарий для рекомендаций")
+                            st.caption(
+                                "Сохраняет результат в `predictions/` — после этого файл появится "
+                                "в селекторе на вкладке **Рекомендации**."
+                            )
+                            _wi_save_name = st.text_input(
+                                "Имя файла",
+                                value=f"whatif_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}",
+                                key="wi_save_name",
+                            )
+                            if st.button("💾 Сохранить в прогнозы", key="wi_save_btn"):
+                                _save_df = _wi_out.copy()
+                                _rn = {}
+                                for _c in _save_df.columns:
+                                    if _c.endswith("_wi_q10"):
+                                        _rn[_c] = _c[:-7] + "_q10"
+                                    elif _c.endswith("_wi_q90"):
+                                        _rn[_c] = _c[:-7] + "_q90"
+                                    elif _c.endswith("_wi"):
+                                        _rn[_c] = _c[:-3]
+                                _save_df = _save_df.rename(columns=_rn)
+                                _wi_pred_dir = os.path.join(_TRAINING_ROOT, selected_session, "predictions")
+                                os.makedirs(_wi_pred_dir, exist_ok=True)
+                                _out_fname = _wi_save_name.strip() or f"whatif_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
+                                if not _out_fname.endswith(".csv"):
+                                    _out_fname += ".csv"
+                                _save_df.to_csv(
+                                    os.path.join(_wi_pred_dir, _out_fname),
+                                    index=False, encoding="utf-8",
+                                )
+                                # Сохраняем параметры сценария рядом с CSV
+                                _promo_labels: dict = {}
+                                for _pme2, (_pml2, _vmap2, _) in _pm_cols_wi.items():
+                                    _vals2 = _wi_promo_schedule.get(_pme2, [])
+                                    _promo_labels[_pml2] = [
+                                        _vmap2.get(int(v), str(v)) for v in _vals2
+                                    ]
+                                _wi_params = {
+                                    "station":      str(_wi_station),
+                                    "start_date":   str(_wi_start_date),
+                                    "horizon_days": int(_wi_horizon),
+                                    "prices":       {lbl(k): round(v, 2) for k, v in _wi_price_vals.items()},
+                                    "weather":      {
+                                        lbl(k) if lbl(k) != k else k: v
+                                        for k, v in _wi_weather_schedule.items()
+                                    },
+                                    "promotions":   _promo_labels,
+                                }
+                                _json_fname = _out_fname[:-4] + ".json"
+                                with open(os.path.join(_wi_pred_dir, _json_fname), "w", encoding="utf-8") as _jf:
+                                    json.dump(_wi_params, _jf, ensure_ascii=False, indent=2)
+                                st.success(f"✅ Сохранено: **{_out_fname}** — выберите его на вкладке Рекомендации")
                         else:
                             st.info(f"Нет данных сценария для станции «{_wi_st}».")
 
@@ -3414,6 +3468,41 @@ with tab_reco:
         _reco_lbls    = [os.path.basename(f) for f in _reco_pfiles]
         _reco_sel_lbl = st.selectbox("📂 Файл прогноза", _reco_lbls, key="reco_pred_file")
         _reco_path    = _reco_pfiles[_reco_lbls.index(_reco_sel_lbl)]
+
+        # Показываем параметры сценария если рядом есть JSON
+        _reco_params_path = _reco_path[:-4] + ".json"
+        if os.path.exists(_reco_params_path):
+            with open(_reco_params_path, encoding="utf-8") as _rpf:
+                _reco_params = json.load(_rpf)
+            with st.expander("🔀 Параметры What-IF сценария", expanded=True):
+                _pc1, _pc2, _pc3 = st.columns(3)
+                with _pc1:
+                    st.markdown(f"**Станция:** {_reco_params.get('station', '—')}")
+                    st.markdown(f"**Старт:** {_reco_params.get('start_date', '—')}")
+                    st.markdown(f"**Горизонт:** {_reco_params.get('horizon_days', '—')} дн.")
+                with _pc2:
+                    _rp_prices = _reco_params.get("prices", {})
+                    if _rp_prices:
+                        st.markdown("**Цены:**")
+                        for _pk, _pv in _rp_prices.items():
+                            st.markdown(f"&nbsp;&nbsp;{_pk}: {_pv} руб/л")
+                    else:
+                        st.markdown("**Цены:** без изменений")
+                with _pc3:
+                    _rp_weather = _reco_params.get("weather", {})
+                    _rp_promo   = _reco_params.get("promotions", {})
+                    if _rp_weather:
+                        st.markdown("**Погода:**")
+                        for _wk, _wv in _rp_weather.items():
+                            _wv_str = ", ".join(str(x) for x in _wv) if isinstance(_wv, list) else str(_wv)
+                            st.markdown(f"&nbsp;&nbsp;{_wk}: {_wv_str}")
+                    if _rp_promo:
+                        st.markdown("**Акции:**")
+                        for _pmk2, _pmv2 in _rp_promo.items():
+                            _pmv_str = ", ".join(str(x) for x in _pmv2) if isinstance(_pmv2, list) else str(_pmv2)
+                            st.markdown(f"&nbsp;&nbsp;{_pmk2}: {_pmv_str}")
+                    if not _rp_weather and not _rp_promo:
+                        st.markdown("**Погода/акции:** без изменений")
 
         @st.cache_data(show_spinner="Загрузка прогноза...")
         def _reco_load(p: str) -> pd.DataFrame:
