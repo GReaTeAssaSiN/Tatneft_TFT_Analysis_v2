@@ -386,7 +386,7 @@ def read_tb_losses(session_name: str) -> List[Tuple[str, Any, Any]]:
             })
 
         train_df = next(
-            (df for tag in ("train_loss_step", "train_loss_epoch", "train_loss")
+            (df for tag in ("train_loss_epoch", "train_loss_step", "train_loss")
              if (df := _to_df(tag)) is not None),
             None,
         )
