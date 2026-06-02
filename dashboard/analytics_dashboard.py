@@ -1,5 +1,5 @@
 """
-EDA Analytics Dashboard — АЗС Татнефть.
+EDA Analytics Dashboard — АЗС.
 Run: streamlit run dashboard/analytics_dashboard.py  (from project root)
 """
 
@@ -37,7 +37,7 @@ from utils.analytics_utils import (
 # Page config
 # ══════════════════════════════════════════════════════════════════════════════
 st.set_page_config(
-    page_title="Аналитика Татнефть АЗС",
+    page_title="Аналитика АЗС",
     page_icon="⛽",
     layout="wide",
 )
@@ -53,7 +53,7 @@ if not sessions:
     st.stop()
 
 _title_col, _sess_col = st.columns([6, 2])
-_title_col.markdown("# ⛽ Аналитика Татнефть АЗС")
+_title_col.markdown("# ⛽ Аналитика АЗС")
 selected_session = _sess_col.selectbox(
     "Набор данных", sessions, index=0
 )

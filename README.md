@@ -68,7 +68,7 @@ streamlit run dashboard/analytics_dashboard.py
 Требования: Python 3.10+, Windows/Linux/macOS, ~4 ГБ свободного места (зависимости).
 
 ```bash
-git clone https://github.com/<your-username>/TFT_Analysis_v2.git
+git clone https://github.com/GReaTeAssaSiN/TFT_Analysis_v2.git
 cd TFT_Analysis_v2
 
 python -m venv venv
