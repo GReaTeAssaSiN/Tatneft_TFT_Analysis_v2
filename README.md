@@ -1,6 +1,6 @@
-# Tatneft TFT Analysis
+# TFT Analysis
 
-Система прогнозирования продаж топлива и товаров магазина на АЗС сети Татнефть на основе нейросетевой модели временных рядов — Temporal Fusion Transformer.
+Система прогнозирования продаж топлива и товаров магазина на АЗС топливной сети на основе нейросетевой модели временных рядов — Temporal Fusion Transformer.
 
 Проект реализован в виде трёх интерактивных веб-приложений (дашбордов), которые запускаются в браузере и не требуют написания кода для работы с данными.
 
@@ -68,8 +68,8 @@ streamlit run dashboard/analytics_dashboard.py
 Требования: Python 3.10+, Windows/Linux/macOS, ~4 ГБ свободного места (зависимости).
 
 ```bash
-git clone https://github.com/<your-username>/Tatneft_TFT_Analysis_v2.git
-cd Tatneft_TFT_Analysis_v2
+git clone https://github.com/<your-username>/TFT_Analysis_v2.git
+cd TFT_Analysis_v2
 
 python -m venv venv
 venv\Scripts\activate       # Windows
@@ -86,7 +86,7 @@ pip install -r requirements.txt
 
 ## Обученная модель
 
-В репозитории включены результаты обучения модели на синтетических данных АЗС Татнефть (сессия `ActualData_2026-05-30`):
+В репозитории включены результаты обучения модели на синтетических данных АЗС (сессия `ActualData_2026-05-30`):
 
 | Файл | Описание |
 |------|----------|
@@ -114,7 +114,7 @@ pip install -r requirements.txt
 dashboard/        — три Streamlit-дашборда
 utils/            — логика обработки данных и обучения (без UI)
 tft/              — скрипты обучения и прогнозирования
-exports/          — тестовые сессии предобработки (реальные данные Татнефть не включены)
+exports/          — тестовые сессии предобработки (реальные данные не включены)
 training/         — артефакты обучения: модель, прогнозы, логи
 requirements.txt  — зависимости Python
 ```

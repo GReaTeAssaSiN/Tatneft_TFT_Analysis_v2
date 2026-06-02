@@ -1,8 +1,8 @@
-# Tatneft TFT Analysis — контекст для Claude Code
+# TFT Analysis — контекст для Claude Code
 
 ## Что это
 
-Три Streamlit-дашборда + два скрипта для прогнозирования продаж топлива и магазина на АЗС Татнефть с помощью **Temporal Fusion Transformer** (pytorch-forecasting). Учебный проект (магистратура КАИ, ТАБД).
+Три Streamlit-дашборда + два скрипта для прогнозирования продаж топлива и магазина на АЗС топливной сети с помощью **Temporal Fusion Transformer** (pytorch-forecasting). Учебный проект (магистратура КАИ, ТАБД).
 
 Виртуальное окружение: `venv/` (Python 3.14, Windows).
 
